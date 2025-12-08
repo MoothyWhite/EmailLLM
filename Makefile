@@ -10,11 +10,13 @@ help:
 	@echo "make ruff-fix   - Run Ruff auto-fix"
 	@echo "make mypy       - Run Mypy type checking"
 	@echo "make format     - Format code with Ruff"
+	@echo "make format-fix - Format code with Ruff"
+	@echo "make tests      - Run all tests"
 	@echo "make sync       - Sync dependencies"
 
 # 运行所有代码质量检查
 .PHONY: check
-check: format ruff mypy
+check: format ruff mypy tests
 
 # 运行Ruff linting
 .PHONY: ruff
@@ -45,6 +47,12 @@ format:
 format-fix:
 	@echo "Formatting code with Ruff..."
 	uv run ruff format
+
+# 运行所有测试
+.PHONY: tests
+tests: 
+	@echo "Running all tests..."
+	uv run pytest 
 
 # 同步依赖
 .PHONY: sync
