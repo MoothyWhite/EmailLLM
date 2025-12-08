@@ -7,11 +7,12 @@
 import signal
 import time
 
-from app.config import config
-from app.idle_listener import MailboxIdleListener
-from app.mail_fetcher import MailFetcher
-from app.mail_sender import MailSender
-from app.utils.logger import setup_logger
+# 使用相对导入
+from .config import config
+from .idle_listener import MailboxIdleListener
+from .mail_fetcher import MailFetcher
+from .mail_sender import MailSender
+from .utils.logger import setup_logger
 
 
 class EmailForwarderBot:
