@@ -14,17 +14,51 @@ class Config:
         else:
             logger.warning(f"No .env file found at {env_path}")
 
-        # 读取环境变量
+        # OpenAI相关配置
         self.OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
         self.OPENAI_BASE_URL = os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1")
+
+        # 邮件转发相关配置
+        # 源邮箱配置（用于接收邮件）
+        self.SOURCE_IMAP_SERVER = os.getenv("SOURCE_IMAP_SERVER", "imap.163.com")
+        self.SOURCE_IMAP_PORT = int(os.getenv("SOURCE_IMAP_PORT", "993"))
+        self.SOURCE_EMAIL = os.getenv("SOURCE_EMAIL")
+        self.SOURCE_PASSWORD = os.getenv("SOURCE_PASSWORD")  # IMAP授权码
+
+        # 目标邮箱配置（用于转发邮件）
+        self.TARGET_EMAIL = os.getenv("TARGET_EMAIL")
+
+        # SMTP配置（用于发送邮件）
+        self.SMTP_SERVER = os.getenv("SMTP_SERVER", "smtp.163.com")
+        self.SMTP_PORT = int(os.getenv("SMTP_PORT", "465"))
+        self.SMTP_PASSWORD = os.getenv(
+            "SMTP_PASSWORD"
+        )  # SMTP授权码，如果未设置则使用SOURCE_PASSWORD
+
+        # 日志配置
+        self.LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
+        self.LOG_FILE = os.getenv("LOG_FILE", "logs/email_forwarder.log")
 
         # 验证必要配置
         self._validate_config()
 
     def _validate_config(self):
         """验证必要配置项"""
-        if not self.OPENAI_API_KEY:
-            raise ValueError("OPENAI_API_KEY is required but not set in environment variables")
+        missing_configs = []
+
+        if not self.SOURCE_EMAIL:
+            missing_configs.append("SOURCE_EMAIL")
+
+        if not self.SOURCE_PASSWORD:
+            missing_configs.append("SOURCE_PASSWORD")
+
+        if not self.TARGET_EMAIL:
+            missing_configs.append("TARGET_EMAIL")
+
+        if missing_configs:
+            raise ValueError(
+                f"Missing required configuration: {', '.join(missing_configs)}"
+            )
 
 
 # 创建全局配置实例

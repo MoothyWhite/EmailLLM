@@ -1,11 +1,17 @@
 [project]
 name = "emailllm"
 version = "0.1.0"
-description = "Add your description here"
+description = "Email auto-forwarding bot with IMAP IDLE support"
 readme = "README.md"
-requires-python = ">=3.13"
+requires-python = ">=3.12"
 dependencies = [
     "loguru>=0.7.3",
     "openai-agents>=0.6.2",
     "python-dotenv>=1.2.1",
+]
+
+[dependency-groups]
+dev = [
+    "mypy>=1.19.0",
+    "ruff>=0.14.8",
 ]
