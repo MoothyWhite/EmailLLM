@@ -8,8 +8,13 @@ import email
 from email.message import Message
 from typing import Any, Dict, Optional, Tuple
 from loguru import logger
+from agents import Agent, Runner
 
 from app.config import config
+
+
+PROMPT = """
+"""
 
 
 class MailProcessor:
@@ -85,7 +90,7 @@ class MailProcessor:
         # 返回处理后的邮件信息
         return email_info
 
-    def process_with_llm(self, email_info: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    def process_with_llm(self, email_info: Dict[str, Any]) -> Optional[str]:
         """
         使用LLM处理邮件内容（具体实现由用户完成）
 
@@ -95,24 +100,22 @@ class MailProcessor:
         Returns:
             经过LLM处理后的结果，如果处理失败则返回None
         """
-        # TODO: 这里是留给用户的LLM处理逻辑实现位置
-        # 用户可以根据email_info中的内容调用LLM进行处理
-        # 并返回处理后的结果
+        body_text = email_info["body_text"]
 
-        # 示例返回格式（用户需要根据实际需求修改）：
-        # processed_result = {
-        #     "summary": "邮件摘要",
-        #     "category": "邮件分类",
-        #     "priority": "优先级",
-        #     "actions": ["需要采取的行动1", "需要采取的行动2"]
-        # }
-        # return processed_result
+        logger.info(f"body_text: {body_text}")
+
+        agent = Agent(name="Assistant", instructions="You are a helpful assistant")
+
+        result = Runner.run_sync(agent, "")
+        print(result.final_output)
+
+        # Code within the code,
+        # Functions calling themselves,
+        # Infinite loop's dance.
 
         # 当前实现仅作占位，返回None表示未处理
         logger.warning("LLM processing logic not implemented yet")
         return None
-
-
 
     def _decode_header(self, header: str) -> str:
         """

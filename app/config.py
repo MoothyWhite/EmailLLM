@@ -14,9 +14,7 @@ class Config:
         else:
             logger.warning(f"No .env file found at {env_path}")
 
-        # OpenAI相关配置
-        self.OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-        self.OPENAI_BASE_URL = os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1")
+        self.LLM_PROMPT = os.getenv("LLM_PROMPT", "")
 
         # 邮件转发相关配置
         # 源邮箱配置（用于接收邮件）
