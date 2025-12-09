@@ -1,22 +1,19 @@
-# 📧 EmailLLM - 邮件自动转发机器人
+# 💝 EmailLLM - 情感分析邮件助手
 
-一个基于IMAP协议的邮件自动转发机器人，能够定期检查邮箱并在收到新邮件时自动转发到指定邮箱，同时支持使用LLM对邮件内容进行处理。
+一个专门用于接收聊天记录邮件并提供情感分析帮助的智能助手。通过IMAP协议定期检查邮箱，对接收到的聊天记录进行情感分析，并给出专业的恋爱建议和沟通策略。
 
-## 🎯 功能特点
+## 🎯 项目目的
 
-- **定时检查**：使用IMAP协议定期检查邮件（非IDLE模式）
-- **智能处理**：支持使用LLM对邮件内容进行智能处理
-- **自动转发**：收到新邮件后自动转发到指定邮箱
-- **Docker部署**：支持Docker容器化部署，7x24小时运行
-- **日志记录**：完整的日志记录便于问题排查
-- **异常处理**：具备连接断线重连机制
-- **安全配置**：敏感信息通过环境变量配置
+EmailLLM旨在帮助用户更好地理解和处理人际关系中的情感问题。当您将聊天记录通过邮件发送给自己时，该系统会自动分析聊天内容，识别潜在的情感问题，并提供针对性的建议，就像一位专业的情感军师一样为您提供帮助。
 
-## 🏗️ 系统架构
+## 🌟 核心功能
 
-```
-用户发送邮件 → 你的专用邮箱 → (IMAP定期检查) → 邮件转发机器人 → 通过SMTP转发到目标邮箱
-```
+- **自动邮件接收**：通过IMAP协议定期检查邮箱，自动接收包含聊天记录的邮件
+- **智能情感分析**：利用大语言模型（LLM）深度分析聊天内容和情感状态
+- **专业恋爱建议**：根据分析结果提供个性化的情感策略和沟通建议
+- **自动化处理**：无需人工干预，全自动处理邮件并返回分析结果
+- **Docker部署**：支持容器化部署，7x24小时稳定运行
+- **安全配置**：敏感信息通过环境变量配置，保障账户安全
 
 ## 🚀 快速开始
 
@@ -37,10 +34,13 @@ cp .env.example .env
 nano .env
 ```
 
-需要配置以下关键信息：
-- `SOURCE_EMAIL`: 源邮箱地址（用于接收邮件）
+需要配置的关键信息：
+
+- `SOURCE_EMAIL`: 您用来接收聊天记录邮件的邮箱地址
 - `SOURCE_PASSWORD`: 源邮箱IMAP授权码
-- `TARGET_EMAIL`: 目标邮箱地址（用于转发邮件）
+- `TARGET_EMAIL`: 您希望接收分析结果的邮箱地址
+- `DEEPSEEK_API_KEY`: DeepSeek API密钥（用于LLM分析）
+- `LLM_PROMPT`: LLM提示词（已预设为情感分析专用提示词）
 
 ### 3. 构建并运行
 
@@ -49,12 +49,12 @@ nano .env
 docker-compose up -d --build
 ```
 
-### 4. 查看日志
+### 4. 使用方法
 
-```bash
-# 实时查看日志
-docker-compose logs -f
-```
+1. 将您的聊天记录整理成文本格式并通过邮件发送到您配置的`SOURCE_EMAIL`邮箱
+2. 系统会自动接收邮件并进行情感分析
+3. 分析结果将以邮件形式发送到您配置的`TARGET_EMAIL`邮箱
+4. 根据提供的建议调整您的沟通策略
 
 ## ⚙️ 配置说明
 
@@ -67,138 +67,17 @@ docker-compose logs -f
 3. 开启IMAP/SMTP服务
 4. 生成授权码用于第三方客户端登录
 
-### 环境变量
+### 环境变量详解
 
 | 变量名 | 说明 | 默认值 |
 |--------|------|--------|
-| SOURCE_EMAIL | 源邮箱地址 | 无 |
+| SOURCE_EMAIL | 源邮箱地址（用于接收聊天记录邮件） | 无 |
 | SOURCE_PASSWORD | 源邮箱IMAP授权码 | 无 |
-| TARGET_EMAIL | 目标邮箱地址 | 无 |
+| TARGET_EMAIL | 目标邮箱地址（用于接收分析结果） | 无 |
+| DEEPSEEK_API_KEY | DeepSeek API密钥 | 无 |
+| LLM_PROMPT | LLM提示词（情感分析专用） | 预设值 |
 | SOURCE_IMAP_SERVER | IMAP服务器地址 | imap.qq.com |
 | SOURCE_IMAP_PORT | IMAP服务器端口 | 993 |
 | SMTP_SERVER | SMTP服务器地址 | smtp.qq.com |
 | SMTP_PORT | SMTP服务器端口 | 465 |
 | CHECK_INTERVAL | 检查间隔（秒） | 60 |
-| LOG_LEVEL | 日志级别 | INFO |
-| LOG_FILE | 日志文件路径 | logs/email_forwarder.log |
-| DEEPSEEK_API_KEY | DeepSeek API密钥（可选） | 无 |
-| LLM_PROMPT | LLM提示词（可选） | 无 |
-
-## 🛠️ 开发指南
-
-### 项目结构
-
-```
-EmailLLM/
-├── docker-compose.yml          # Docker Compose配置
-├── Dockerfile                  # Docker镜像构建文件
-├── .env                        # 敏感配置文件
-├── .env.example                # 配置文件模板
-├── pyproject.toml              # Python项目依赖声明
-├── Makefile                    # 项目构建和检查命令
-├── app/
-│   ├── __init__.py
-│   ├── main.py                 # 应用入口
-│   ├── config.py               # 配置管理
-│   ├── mail_fetcher.py         # 邮件获取和解析
-│   ├── mail_sender.py          # 邮件发送
-│   ├── mail_processor.py       # 邮件处理（包括LLM）
-│   ├── mail_poller.py          # 邮件轮询
-│   └── utils/
-│       ├── __init__.py
-│       └── logger.py           # 日志配置
-├── scripts/
-│   ├── IMAP_check.py           # IMAP连接测试脚本
-│   └── LLM_check.py            # LLM测试脚本
-└── logs/                       # 日志目录
-```
-
-### 本地开发
-
-1. 安装依赖：
-```bash
-# 使用uv安装依赖
-uv sync
-```
-
-2. 运行应用：
-```bash
-# 直接运行
-uv run python -m app.main
-```
-
-## 📊 监控和维护
-
-### 健康检查
-
-Docker Compose配置中包含了健康检查，会定期检查日志文件的更新情况。
-
-### 日志管理
-
-应用会将日志写入`logs/email_forwarder.log`文件，并自动按大小轮转。
-
-## 🔧 故障排除
-
-### 常见问题
-
-1. **无法连接到邮箱服务器**
-   - 检查网络连接
-   - 确认IMAP/SMTP服务已开启
-   - 验证授权码是否正确
-
-2. **邮件转发失败**
-   - 检查目标邮箱地址是否正确
-   - 查看日志了解具体错误信息
-
-### 查看日志
-
-```bash
-# 查看最近的日志
-docker-compose logs --tail=100
-
-# 实时查看日志
-docker-compose logs -f
-```
-
-## 🧪 代码质量检查
-
-本项目集成了多种代码质量检查工具，确保代码质量和一致性。
-
-### 工具介绍
-
-- **Ruff**: 超快的Python linter和格式化工具
-- **Mypy**: Python静态类型检查工具
-
-### 使用方法
-
-```bash
-# 安装开发依赖（如果尚未安装）
-make sync
-
-# 运行所有代码质量检查
-make check
-
-# 运行Ruff linting
-make ruff
-
-# 运行Ruff自动修复
-make ruff-fix
-
-# 运行Mypy类型检查
-make mypy
-
-# 格式化代码
-make format
-
-# 清理缓存文件
-make clean
-```
-
-### 配置文件
-
-- `ruff.toml`: Ruff配置文件
-- `mypy.ini`: Mypy配置文件
-
-## 📄 许可证
-
-本项目采用MIT许可证，详情请见[LICENSE](LICENSE)文件。
