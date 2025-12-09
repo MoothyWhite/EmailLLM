@@ -37,7 +37,7 @@ class MailSender:
             # 设置邮件头
             # 在主题前添加转发标识
             original_subject = email_info.get("subject", "")
-            forwarded_subject = f"[Forwarded] {original_subject}"
+            forwarded_subject = f"[EmailLLm] {original_subject}"
             message["Subject"] = forwarded_subject
 
             # 设置发件人和收件人

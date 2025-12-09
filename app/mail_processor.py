@@ -84,12 +84,12 @@ class MailProcessor:
         # 调用LLM处理逻辑
         processed_result = self.process_with_llm(email_info)
 
-        logger.info(f"LLM processing result: {processed_result}")
-
         # 如果LLM处理成功，替换邮件正文
         if processed_result is not None:
             # 使用LLM处理结果替换原始正文
             email_info["body_text"] = processed_result
+
+        print(email_info)
 
         # 返回处理后的邮件信息
         return email_info
@@ -114,6 +114,8 @@ class MailProcessor:
         )
         result = Runner.run_sync(agent, body_text)
         final_output = result.final_output
+
+        logger.info(f"final_output: {final_output}")
 
         return final_output
 

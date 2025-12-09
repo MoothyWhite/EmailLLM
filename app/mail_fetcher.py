@@ -1,181 +1,166 @@
-import email
-import imaplib
-from email.header import decode_header
+import ssl
+from typing import Any, Dict, List, Optional, Union
 from email.message import Message
-from typing import Any, Dict, Optional
+from email.header import decode_header
+import email
 
 from loguru import logger
+from imapclient import IMAPClient  # type: ignore
 
 from app.config import config
 
 
 class MailFetcher:
-    """邮件获取和解析器"""
+    """使用 IMAPClient 的邮件获取器"""
 
     def __init__(self):
-        """初始化邮件获取器"""
-        self.imap_conn: Optional[imaplib.IMAP4_SSL] = None
+        self.imap_conn: Optional[IMAPClient] = None
 
     def connect(self) -> None:
-        """建立IMAP连接"""
-        import ssl
-
-        logger.info("Connecting to IMAP server for fetching emails...")
-
-        # 创建SSL上下文
+        """建立 IMAP 连接"""
+        if self.imap_conn:
+            return
         context = ssl.create_default_context()
-
-        # 连接到IMAP服务器
-        self.imap_conn = imaplib.IMAP4_SSL(
-            config.SOURCE_IMAP_SERVER, config.SOURCE_IMAP_PORT, ssl_context=context
+        self.imap_conn = IMAPClient(
+            config.SOURCE_IMAP_SERVER,
+            port=config.SOURCE_IMAP_PORT,
+            ssl=True,
+            ssl_context=context
         )
-
-        # 登录
         self.imap_conn.login(config.SOURCE_EMAIL, config.SOURCE_PASSWORD)
-        logger.info("Successfully connected to IMAP server for fetching")
+        logger.info("IMAP connection established")
 
     def disconnect(self) -> None:
-        """断开IMAP连接"""
+        """断开 IMAP 连接"""
         if self.imap_conn:
             try:
-                self.imap_conn.close()
                 self.imap_conn.logout()
-                logger.info("Disconnected from IMAP server (fetcher)")
+                logger.info("IMAP connection closed")
             except Exception as e:
-                logger.warning(f"Error disconnecting from IMAP server: {e}")
+                logger.warning(f"Error disconnecting IMAP: {e}")
             finally:
                 self.imap_conn = None
 
-    def fetch_email_by_uid(self, uid: str) -> Optional[Dict[str, Any]]:
-        """
-        根据UID获取并解析邮件
-
-        Args:
-            uid: 邮件的唯一标识符
-
-        Returns:
-            包含邮件信息的字典，如果失败则返回None
-        """
+    def search_unseen_emails(self) -> List[int]:
+        """返回未读邮件的 UID 列表"""
         try:
             if not self.imap_conn:
                 self.connect()
-
-            # 选择收件箱
-            if self.imap_conn:
-                self.imap_conn.select("INBOX")
-            else:
-                return None
-
-            # 根据UID获取邮件
-            if not self.imap_conn:
-                return None
-            status, msg_data = self.imap_conn.uid("FETCH", uid, "(RFC822)")
-            if status != "OK":
-                logger.error(f"Failed to fetch email with UID {uid}: {status}")
-                return None
-
-            # 解析邮件
-            if not msg_data or not msg_data[0]:
-                logger.error(f"No data received for email with UID {uid}")
-                return None
-
-            if len(msg_data[0]) < 2:
-                logger.error(f"Invalid data format for email with UID {uid}")
-                return None
-
-            raw_email = msg_data[0][1]
-            email_message = email.message_from_bytes(raw_email)
-
-            # 解析邮件信息
-            email_info = self._parse_email(email_message)
-            email_info["uid"] = uid
-
-            # 标记邮件为已读
-            self._mark_as_read(uid)
-
-            logger.info(f"Successfully fetched and parsed email with UID {uid}")
-            return email_info
-
+            self.imap_conn.select_folder("INBOX")
+            uids = self.imap_conn.search(['UNSEEN'])
+            return uids
         except Exception as e:
-            logger.error(f"Error fetching email with UID {uid}: {e}")
+            logger.error(f"Error searching unseen emails: {e}")
+            return []
+
+    def fetch_emails_by_uids(self, uids: List[Union[int, bytes, str]]) -> Dict[int, bytes]:
+        """批量获取原始邮件数据"""
+        if not uids:
+            return {}
+
+        try:
+            if not self.imap_conn:
+                self.connect()
+            self.imap_conn.select_folder("INBOX")
+
+            # 转成 int
+            uid_list = [
+                int(uid.decode() if isinstance(uid, bytes) else uid)
+                for uid in uids
+            ]
+
+            response = self.imap_conn.fetch(uid_list, ['RFC822'])
+            emails = {uid: response[uid][b'RFC822'] for uid in uid_list if uid in response}
+
+            logger.info(f"Fetched {len(emails)} emails in batch")
+            return emails
+        except Exception as e:
+            logger.error(f"Error fetching emails by UIDs: {e}")
+            return {}
+
+    def fetch_email_by_uid(self, uid: Union[int, str, bytes]) -> Optional[Dict[str, Any]]:
+        """根据 UID 获取并解析单封邮件"""
+        try:
+            if not self.imap_conn:
+                self.connect()
+            self.imap_conn.select_folder("INBOX")
+
+            uid_int = int(uid.decode() if isinstance(uid, bytes) else uid)
+            response = self.imap_conn.fetch([uid_int], ['RFC822'])
+            if uid_int not in response:
+                logger.error(f"No data for email UID {uid}")
+                return None
+
+            raw_email = response[uid_int][b'RFC822']
+            email_message = email.message_from_bytes(raw_email)
+            email_info = self._parse_email(email_message)
+            email_info['uid'] = str(uid_int)
+
+            # 标记已读
+            self._mark_as_read(uid_int)
+
+            return email_info
+        except Exception as e:
+            logger.error(f"Error fetching email UID {uid}: {e}")
             return None
 
     def _parse_email(self, email_message: Message) -> Dict[str, Any]:
-        """
-        解析邮件内容
+        """解析邮件内容"""
+        def decode_header_str(header: str) -> str:
+            if not header:
+                return ""
+            decoded = decode_header(header)
+            return ''.join([
+                part.decode(enc or 'utf-8', errors='ignore') if isinstance(part, bytes) else part
+                for part, enc in decoded
+            ])
 
-        Args:
-            email_message: email.message.Message对象
-
-        Returns:
-            包含邮件信息的字典
-        """
-        # 解析邮件头
-        subject = self._decode_header(email_message.get("Subject", ""))
-        sender = self._decode_header(email_message.get("From", ""))
-        receiver = self._decode_header(email_message.get("To", ""))
+        subject = decode_header_str(email_message.get("Subject", ""))
+        sender = decode_header_str(email_message.get("From", ""))
+        receiver = decode_header_str(email_message.get("To", ""))
         date = email_message.get("Date", "")
 
-        # 初始化邮件内容
         body_text = ""
         body_html = ""
         attachments = []
 
-        # 处理多部分邮件
         if email_message.is_multipart():
             for part in email_message.walk():
                 content_type = part.get_content_type()
-                content_disposition = str(part.get("Content-Disposition", ""))
+                disposition = str(part.get("Content-Disposition", ""))
 
-                # 跳过附件（如果需要处理附件可以在这里实现）
-                if "attachment" in content_disposition:
-                    # 可以选择保存附件信息
+                if "attachment" in disposition:
                     filename = part.get_filename()
                     if filename:
-                        attachments.append(
-                            {
-                                "filename": self._decode_header(filename),
-                                "content_type": content_type,
-                            }
-                        )
+                        attachments.append({
+                            "filename": decode_header_str(filename),
+                            "content_type": content_type
+                        })
                     continue
 
-                # 处理文本内容
-                if content_type == "text/plain":
-                    charset = part.get_content_charset() or "utf-8"
-                    try:
-                        payload = part.get_payload(decode=True)
-                        if isinstance(payload, bytes):
-                            body_text += payload.decode(charset, errors="ignore")
-                    except Exception as e:
-                        logger.warning(f"Error decoding plain text part: {e}")
-                elif content_type == "text/html":
-                    charset = part.get_content_charset() or "utf-8"
-                    try:
-                        payload = part.get_payload(decode=True)
-                        if isinstance(payload, bytes):
-                            body_html += payload.decode(charset, errors="ignore")
-                    except Exception as e:
-                        logger.warning(f"Error decoding HTML part: {e}")
-        else:
-            # 处理单部分邮件
-            content_type = email_message.get_content_type()
-            charset = email_message.get_content_charset() or "utf-8"
+                payload = part.get_payload(decode=True)
+                if not payload:
+                    continue
 
-            if content_type == "text/plain":
                 try:
-                    payload = email_message.get_payload(decode=True)
-                    if isinstance(payload, bytes):
-                        body_text = payload.decode(charset, errors="ignore")
+                    charset = part.get_content_charset() or "utf-8"
+                    if content_type == "text/plain":
+                        body_text += payload.decode(charset, errors="ignore")
+                    elif content_type == "text/html":
+                        body_html += payload.decode(charset, errors="ignore")
                 except Exception as e:
-                    logger.warning(f"Error decoding plain text: {e}")
-            elif content_type == "text/html":
+                    logger.warning(f"Error decoding part: {e}")
+        else:
+            payload = email_message.get_payload(decode=True)
+            if payload:
                 try:
-                    payload = email_message.get_payload(decode=True)
-                    if isinstance(payload, bytes):
+                    charset = email_message.get_content_charset() or "utf-8"
+                    if email_message.get_content_type() == "text/plain":
+                        body_text = payload.decode(charset, errors="ignore")
+                    elif email_message.get_content_type() == "text/html":
                         body_html = payload.decode(charset, errors="ignore")
                 except Exception as e:
-                    logger.warning(f"Error decoding HTML: {e}")
+                    logger.warning(f"Error decoding payload: {e}")
 
         return {
             "subject": subject,
@@ -184,52 +169,23 @@ class MailFetcher:
             "date": date,
             "body_text": body_text,
             "body_html": body_html,
-            "attachments": attachments,
+            "attachments": attachments
         }
 
-    def _decode_header(self, header: str) -> str:
-        """
-        解码邮件头部信息
-
-        Args:
-            header: 编码的头部字符串
-
-        Returns:
-            解码后的字符串
-        """
-        if not header:
-            return ""
-
+    def parse_raw_email(self, raw_email: bytes) -> Dict[str, Any]:
+        """解析原始邮件数据"""
         try:
-            decoded_parts = decode_header(header)
-            decoded_string = ""
-            for part, encoding in decoded_parts:
-                if isinstance(part, bytes):
-                    if encoding:
-                        decoded_string += part.decode(encoding, errors="ignore")
-                    else:
-                        decoded_string += part.decode("utf-8", errors="ignore")
-                else:
-                    decoded_string += part
-            return decoded_string
+            msg = email.message_from_bytes(raw_email)
+            return self._parse_email(msg)
         except Exception as e:
-            logger.warning(f"Error decoding header '{header}': {e}")
-            return header
+            logger.error(f"Error parsing raw email: {e}")
+            return {}
 
-    def _mark_as_read(self, uid: str):
-        """
-        标记邮件为已读
-
-        Args:
-            uid: 邮件的唯一标识符
-        """
+    def _mark_as_read(self, uid: int) -> None:
+        """标记邮件为已读"""
         try:
             if self.imap_conn:
-                # 标记为已读
-                status, _ = self.imap_conn.uid("STORE", uid, "+FLAGS", "\\Seen")
-                if status == "OK":
-                    logger.info(f"Marked email {uid} as read")
-                else:
-                    logger.warning(f"Failed to mark email {uid} as read: {status}")
+                self.imap_conn.add_flags([uid], [b'\\Seen'])
+                logger.info(f"Marked email UID {uid} as read")
         except Exception as e:
-            logger.error(f"Error marking email {uid} as read: {e}")
+            logger.error(f"Error marking UID {uid} as read: {e}")
