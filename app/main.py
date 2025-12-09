@@ -64,6 +64,16 @@ class EmailForwarderBot:
                 logger.info(
                     f"Successfully forwarded email with UID: {email_info.get('uid', 'unknown')}"
                 )
+                # 邮件转发成功后，将原邮件标记为已读
+                uid = email_info.get('uid')
+                if uid:
+                    try:
+                        # 确保连接到IMAP服务器
+                        self.fetcher.connect()
+                        # 标记邮件为已读
+                        self.fetcher._mark_as_read(int(uid))
+                    except Exception as e:
+                        logger.error(f"Error marking email UID {uid} as read: {e}")
             else:
                 logger.error(
                     f"Failed to forward email with UID: {email_info.get('uid', 'unknown')}"
