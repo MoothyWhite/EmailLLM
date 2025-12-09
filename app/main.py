@@ -16,6 +16,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from .config import config
 from .mail_fetcher import MailFetcher
 from .mail_sender import MailSender
+from .mail_processor import MailProcessor
 from .utils.logger import setup_logger
 
 # 导入IMAPClient
@@ -34,6 +35,7 @@ class EmailForwarderBot:
         # 初始化各组件
         self.fetcher = MailFetcher()
         self.sender = MailSender()
+        self.processor = MailProcessor()
 
         # 运行状态标志
         self.is_running = False
@@ -75,14 +77,27 @@ class EmailForwarderBot:
                     try:
                         self.logger.info(f"Processing new mail with UID: {uid}")
 
-                        # 获取邮件内容
-                        email_info = self.fetcher.fetch_email_by_uid(str(uid))
-                        if not email_info:
-                            self.logger.error(f"Failed to fetch email with UID: {uid}")
+                        # 获取邮件内容（使用IMAPClient直接获取原始邮件数据）
+                        response = client.fetch([uid], ["RFC822"])
+                        if not response or uid not in response:
+                            self.logger.error(
+                                f"Failed to fetch raw email with UID: {uid}"
+                            )
                             continue
 
+                        raw_email = response[uid][b"RFC822"]
+
+                        # 使用MailProcessor解析原始邮件数据
+                        email_info = self.processor.parse_raw_email(raw_email)
+                        if not email_info:
+                            self.logger.error(f"Failed to parse email with UID: {uid}")
+                            continue
+
+                        # 使用MailProcessor处理邮件内容（包括LLM处理）
+                        processed_email_info = self.processor.process(email_info)
+
                         # 发送邮件
-                        success = self.sender.send_email(email_info)
+                        success = self.sender.send_email(processed_email_info)
                         if success:
                             self.logger.info(
                                 f"Successfully forwarded email with UID: {uid}"
