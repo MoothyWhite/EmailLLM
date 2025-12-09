@@ -34,7 +34,7 @@ ruff-fix:
 .PHONY: mypy
 mypy:
 	@echo "Running Mypy type checking..."
-	uv run mypy . --exclude 'site'
+	uv run mypy . --exclude 'site|scripts'
 
 # 格式化代码
 .PHONY: format

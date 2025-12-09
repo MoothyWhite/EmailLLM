@@ -4,6 +4,7 @@
 负责邮件的解析、LLM处理和格式化输出
 """
 
+import os
 import email
 from email.message import Message
 from typing import Any, Dict, Optional, Tuple
@@ -13,8 +14,9 @@ from agents import Agent, Runner
 from app.config import config
 
 
-PROMPT = """
-"""
+def _get_model():
+    if os.environ.get("DEEPSEEK_API_KEY"):
+        return "litellm/deepseek/deepseek-chat"
 
 
 class MailProcessor:
@@ -104,18 +106,14 @@ class MailProcessor:
 
         logger.info(f"body_text: {body_text}")
 
-        agent = Agent(name="Assistant", instructions="You are a helpful assistant")
+        model = _get_model()
+        agent = Agent(
+            name="Assistant", model=model, instructions=os.environ.get("LLM_PROMPT", "")
+        )
+        result = Runner.run_sync(agent, body_text)
+        final_output = result.final_output
 
-        result = Runner.run_sync(agent, "")
-        print(result.final_output)
-
-        # Code within the code,
-        # Functions calling themselves,
-        # Infinite loop's dance.
-
-        # 当前实现仅作占位，返回None表示未处理
-        logger.warning("LLM processing logic not implemented yet")
-        return None
+        return final_output
 
     def _decode_header(self, header: str) -> str:
         """

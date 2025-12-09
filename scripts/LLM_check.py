@@ -10,6 +10,7 @@ from agents import Agent, Runner, set_tracing_disabled
 # 导入配置
 
 set_tracing_disabled(True)
+print(config.LLM_PROMPT)
 
 if os.environ.get("DEEPSEEK_API_KEY"):
     model = "litellm/deepseek/deepseek-chat"
