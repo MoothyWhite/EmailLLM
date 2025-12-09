@@ -1,3 +1,7 @@
+from imapclient import IMAPClient  # type: ignore
+import smtplib
+import ssl
+
 IMAP_HOST = "imap.qq.com"
 IMAP_PORT = 993
 
@@ -8,9 +12,6 @@ SOURCE_EMAIL = "sss"
 SOURCE_PASSWORD = "xxx"
 DEST_EMAIL = "xxx"
 
-from imapclient import IMAPClient
-import smtplib
-import ssl
 
 def main():
     ssl_ctx = ssl.create_default_context()

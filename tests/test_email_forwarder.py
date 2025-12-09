@@ -28,7 +28,7 @@ def test_smtp_connection(mock_smtp):
     try:
         # 模拟成功的SMTP连接
         mock_server = MagicMock()
-        mock_smtp.return_value.__enter__.return_value = mock_server
+        mock_smtp.return_value = mock_server
 
         sender = MailSender()
         result = sender.test_connection()
@@ -53,7 +53,7 @@ def test_email_sending(mock_smtp):
     try:
         # 模拟成功的邮件发送
         mock_server = MagicMock()
-        mock_smtp.return_value.__enter__.return_value = mock_server
+        mock_smtp.return_value = mock_server
 
         sender = MailSender()
 
