@@ -9,7 +9,7 @@ import email
 from email.message import Message
 from typing import Any, Dict, Optional, Tuple
 from loguru import logger
-from agents import Agent, Runner
+from agents import Agent, Runner, set_tracing_disabled
 
 from app.config import config
 
@@ -25,6 +25,7 @@ class MailProcessor:
     def __init__(self):
         """初始化邮件处理器"""
         self.config = config
+        set_tracing_disabled(True)
         logger.info("MailProcessor initialized")
 
     def parse_raw_email(self, raw_email: bytes) -> Optional[Dict[str, Any]]:

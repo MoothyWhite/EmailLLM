@@ -28,14 +28,14 @@ class MailFetcher:
             ssl_context=context
         )
         self.imap_conn.login(config.SOURCE_EMAIL, config.SOURCE_PASSWORD)
-        logger.info("IMAP connection established")
+        # logger.info("IMAP connection established") # 减少无效日志
 
     def disconnect(self) -> None:
         """断开 IMAP 连接"""
         if self.imap_conn:
             try:
                 self.imap_conn.logout()
-                logger.info("IMAP connection closed")
+                # logger.info("IMAP connection closed") # 减少无效日志
             except Exception as e:
                 logger.warning(f"Error disconnecting IMAP: {e}")
             finally:
