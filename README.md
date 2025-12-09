@@ -1,10 +1,11 @@
 # 📧 EmailLLM - 邮件自动转发机器人
 
-一个基于IMAP IDLE协议的邮件自动转发机器人，能够实时监听邮箱并在收到新邮件时自动转发到指定邮箱。
+一个基于IMAP协议的邮件自动转发机器人，能够定期检查邮箱并在收到新邮件时自动转发到指定邮箱，同时支持使用LLM对邮件内容进行处理。
 
 ## 🎯 功能特点
 
-- **实时监听**：使用IMAP IDLE协议实现准实时邮件监听
+- **定时检查**：使用IMAP协议定期检查邮件（非IDLE模式）
+- **智能处理**：支持使用LLM对邮件内容进行智能处理
 - **自动转发**：收到新邮件后自动转发到指定邮箱
 - **Docker部署**：支持Docker容器化部署，7x24小时运行
 - **日志记录**：完整的日志记录便于问题排查
@@ -14,7 +15,7 @@
 ## 🏗️ 系统架构
 
 ```
-用户发送邮件 → 你的专用163邮箱 → (IMAP IDLE长连接) → 邮件转发机器人 → 通过SMTP转发到目标邮箱
+用户发送邮件 → 你的专用邮箱 → (IMAP定期检查) → 邮件转发机器人 → 通过SMTP转发到目标邮箱
 ```
 
 ## 🚀 快速开始
@@ -59,10 +60,10 @@ docker-compose logs -f
 
 ### 邮箱配置
 
-对于163邮箱，需要开启IMAP/SMTP服务并生成授权码：
+对于QQ邮箱，需要开启IMAP/SMTP服务并生成授权码：
 
-1. 登录163邮箱网页版
-2. 进入设置 → POP3/SMTP/IMAP
+1. 登录QQ邮箱网页版
+2. 进入设置 → 账户
 3. 开启IMAP/SMTP服务
 4. 生成授权码用于第三方客户端登录
 
@@ -73,34 +74,42 @@ docker-compose logs -f
 | SOURCE_EMAIL | 源邮箱地址 | 无 |
 | SOURCE_PASSWORD | 源邮箱IMAP授权码 | 无 |
 | TARGET_EMAIL | 目标邮箱地址 | 无 |
-| SOURCE_IMAP_SERVER | IMAP服务器地址 | imap.163.com |
+| SOURCE_IMAP_SERVER | IMAP服务器地址 | imap.qq.com |
 | SOURCE_IMAP_PORT | IMAP服务器端口 | 993 |
-| SMTP_SERVER | SMTP服务器地址 | smtp.163.com |
+| SMTP_SERVER | SMTP服务器地址 | smtp.qq.com |
 | SMTP_PORT | SMTP服务器端口 | 465 |
+| CHECK_INTERVAL | 检查间隔（秒） | 60 |
 | LOG_LEVEL | 日志级别 | INFO |
 | LOG_FILE | 日志文件路径 | logs/email_forwarder.log |
+| DEEPSEEK_API_KEY | DeepSeek API密钥（可选） | 无 |
+| LLM_PROMPT | LLM提示词（可选） | 无 |
 
 ## 🛠️ 开发指南
 
 ### 项目结构
 
 ```
-email-forwarder-bot/
+EmailLLM/
 ├── docker-compose.yml          # Docker Compose配置
 ├── Dockerfile                  # Docker镜像构建文件
 ├── .env                        # 敏感配置文件
 ├── .env.example                # 配置文件模板
 ├── pyproject.toml              # Python项目依赖声明
+├── Makefile                    # 项目构建和检查命令
 ├── app/
 │   ├── __init__.py
 │   ├── main.py                 # 应用入口
 │   ├── config.py               # 配置管理
-│   ├── idle_listener.py        # IMAP IDLE监听器
 │   ├── mail_fetcher.py         # 邮件获取和解析
 │   ├── mail_sender.py          # 邮件发送
+│   ├── mail_processor.py       # 邮件处理（包括LLM）
+│   ├── mail_poller.py          # 邮件轮询
 │   └── utils/
 │       ├── __init__.py
 │       └── logger.py           # 日志配置
+├── scripts/
+│   ├── IMAP_check.py           # IMAP连接测试脚本
+│   └── LLM_check.py            # LLM测试脚本
 └── logs/                       # 日志目录
 ```
 
@@ -115,7 +124,7 @@ uv sync
 2. 运行应用：
 ```bash
 # 直接运行
-python app/main.py
+uv run python -m app.main
 ```
 
 ## 📊 监控和维护
@@ -164,7 +173,7 @@ docker-compose logs -f
 
 ```bash
 # 安装开发依赖（如果尚未安装）
-make install-dev
+make sync
 
 # 运行所有代码质量检查
 make check
