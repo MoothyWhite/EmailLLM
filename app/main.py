@@ -13,7 +13,6 @@ import threading
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # 使用相对导入
-from .config import config
 from .mail_fetcher import MailFetcher
 from .mail_sender import MailSender
 from .mail_processor import MailProcessor
@@ -51,9 +50,11 @@ class EmailForwarderBot:
             # 检查邮件主题是否以"[EmailLLM]"开头，如果是则跳过处理
             subject = email_info.get("subject", "")
             if subject.startswith("[EmailLLM]"):
-                logger.info(f"Skipping email with subject '{subject}' as it starts with '[EmailLLM]'")
+                logger.info(
+                    f"Skipping email with subject '{subject}' as it starts with '[EmailLLM]'"
+                )
                 return
-                
+
             # 使用MailProcessor处理邮件内容（包括LLM处理）
             processed_email_info = self.processor.process(email_info)
 

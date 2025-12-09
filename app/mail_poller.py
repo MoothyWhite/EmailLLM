@@ -1,6 +1,5 @@
-import time
 import threading
-from typing import List, Callable, Any, Union
+from typing import Callable, Any
 from loguru import logger
 
 from app.config import config
@@ -65,7 +64,7 @@ class MailPoller:
                 return
 
             # 批量获取邮件
-            raw_emails = self.fetcher.fetch_emails_by_uids(uids)
+            raw_emails = self.fetcher.fetch_emails_by_uids(list(uids))
 
             # 处理每封邮件
             for uid, raw_email in raw_emails.items():

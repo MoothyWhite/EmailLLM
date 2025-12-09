@@ -44,28 +44,13 @@ class MailSender:
             message["From"] = self.sender_email
             message["To"] = config.TARGET_EMAIL
 
-            # 添加邮件正文
+            # 添加邮件正文，只使用纯文本内容
             body_text = email_info.get("body_text", "")
-            body_html = email_info.get("body_html", "")
+            # 忽略HTML内容
 
-            # 如果有HTML内容，优先使用HTML
-            if body_html:
-                # 创建HTML部分
-                html_part = MIMEText(body_html, "html")
-                message.attach(html_part)
-
-                # 如果也有文本内容，添加纯文本作为备选
-                if body_text:
-                    text_part = MIMEText(body_text, "plain")
-                    message.attach(text_part)
-            elif body_text:
-                # 只有文本内容
-                text_part = MIMEText(body_text, "plain")
-                message.attach(text_part)
-            else:
-                # 没有内容的情况
-                text_part = MIMEText("", "plain")
-                message.attach(text_part)
+            # 只使用纯文本内容
+            text_part = MIMEText(body_text, "plain")
+            message.attach(text_part)
 
             # TODO: 处理附件（如果需要）
             # attachments = email_info.get('attachments', [])

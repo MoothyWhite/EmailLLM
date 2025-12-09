@@ -57,13 +57,13 @@ def test_email_sending(mock_smtp):
 
         sender = MailSender()
 
-        # 创建测试邮件
+        # 创建测试邮件，不包含HTML内容
         test_email = {
             "subject": "Test Email from Email Forwarder Bot",
             "sender": config.SOURCE_EMAIL,
             "receiver": config.TARGET_EMAIL,
             "body_text": "This is a test email sent from the Email Forwarder Bot.\n\n测试邮件内容。",
-            "body_html": "<h1>Test Email from Email Forwarder Bot</h1><p>This is a test email sent from the Email Forwarder Bot.</p><p>测试邮件内容。</p>",
+            "body_html": "",  # 不再使用HTML内容
         }
 
         result = sender.send_email(test_email)

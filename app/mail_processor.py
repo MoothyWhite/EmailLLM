@@ -54,14 +54,14 @@ class MailProcessor:
             # 解析附件信息
             attachments = self._extract_attachments(email_message)
 
-            # 构建邮件信息字典
+            # 构建邮件信息字典，不再包含HTML内容
             email_info = {
                 "subject": subject,
                 "sender": sender,
                 "receiver": receiver,
                 "date": date,
                 "body_text": body_text,
-                "body_html": body_html,
+                "body_html": body_html,  # 保持字段但始终为空
                 "attachments": attachments,
             }
 
@@ -159,10 +159,10 @@ class MailProcessor:
             email_message: email.message.Message对象
 
         Returns:
-            (纯文本正文, HTML正文)的元组
+            (纯文本正文, HTML正文)的元组，其中HTML正文始终为空字符串
         """
         body_text = ""
-        body_html = ""
+        body_html = ""  # 不再处理HTML内容
 
         try:
             if email_message.is_multipart():
@@ -175,7 +175,7 @@ class MailProcessor:
                     if "attachment" in content_disposition:
                         continue
 
-                    # 处理文本内容
+                    # 只处理纯文本内容，忽略HTML
                     if content_type == "text/plain":
                         charset = part.get_content_charset() or "utf-8"
                         try:
@@ -184,19 +184,12 @@ class MailProcessor:
                                 body_text += payload.decode(charset, errors="ignore")
                         except Exception as e:
                             logger.warning(f"Error decoding plain text part: {e}")
-                    elif content_type == "text/html":
-                        charset = part.get_content_charset() or "utf-8"
-                        try:
-                            payload = part.get_payload(decode=True)
-                            if isinstance(payload, bytes):
-                                body_html += payload.decode(charset, errors="ignore")
-                        except Exception as e:
-                            logger.warning(f"Error decoding HTML part: {e}")
             else:
                 # 处理单部分邮件
                 content_type = email_message.get_content_type()
                 charset = email_message.get_content_charset() or "utf-8"
 
+                # 只处理纯文本内容，忽略HTML
                 if content_type == "text/plain":
                     try:
                         payload = email_message.get_payload(decode=True)
@@ -204,13 +197,6 @@ class MailProcessor:
                             body_text = payload.decode(charset, errors="ignore")
                     except Exception as e:
                         logger.warning(f"Error decoding plain text: {e}")
-                elif content_type == "text/html":
-                    try:
-                        payload = email_message.get_payload(decode=True)
-                        if isinstance(payload, bytes):
-                            body_html = payload.decode(charset, errors="ignore")
-                    except Exception as e:
-                        logger.warning(f"Error decoding HTML: {e}")
 
         except Exception as e:
             logger.error(f"Error extracting email body: {e}")
