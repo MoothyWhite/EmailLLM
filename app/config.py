@@ -18,7 +18,7 @@ class Config:
 
         # 邮件转发相关配置
         # 源邮箱配置（用于接收邮件）
-        self.SOURCE_IMAP_SERVER = os.getenv("SOURCE_IMAP_SERVER", "imap.163.com")
+        self.SOURCE_IMAP_SERVER = os.getenv("SOURCE_IMAP_SERVER", "imap.qq.com")
         self.SOURCE_IMAP_PORT = int(os.getenv("SOURCE_IMAP_PORT", "993"))
         self.SOURCE_EMAIL = os.getenv("SOURCE_EMAIL")
         self.SOURCE_PASSWORD = os.getenv("SOURCE_PASSWORD")  # IMAP授权码
@@ -27,7 +27,7 @@ class Config:
         self.TARGET_EMAIL = os.getenv("TARGET_EMAIL")
 
         # SMTP配置（用于发送邮件）
-        self.SMTP_SERVER = os.getenv("SMTP_SERVER", "smtp.163.com")
+        self.SMTP_SERVER = os.getenv("SMTP_SERVER", "smtp.qq.com")
         self.SMTP_PORT = int(os.getenv("SMTP_PORT", "465"))
         self.SMTP_PASSWORD = os.getenv(
             "SMTP_PASSWORD"
