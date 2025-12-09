@@ -35,6 +35,9 @@ class Config:
             "SMTP_PASSWORD"
         )  # SMTP授权码，如果未设置则使用SOURCE_PASSWORD
 
+        # 循环检查间隔（秒）
+        self.CHECK_INTERVAL = int(os.getenv("CHECK_INTERVAL", "60"))
+
         # 日志配置
         self.LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
         self.LOG_FILE = os.getenv("LOG_FILE", "logs/email_forwarder.log")

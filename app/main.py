@@ -39,7 +39,7 @@ class EmailForwarderBot:
         self.is_running = False
 
         # 循环检查间隔（秒）
-        self.check_interval = 60  # 默认每分钟检查一次
+        self.check_interval = config.CHECK_INTERVAL
 
         # 注册信号处理器，用于优雅关闭
         signal.signal(signal.SIGINT, self._signal_handler)
