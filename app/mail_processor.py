@@ -80,9 +80,7 @@ class MailProcessor:
         # 如果LLM处理成功，替换邮件正文
         if processed_result is not None:
             # 使用LLM处理结果替换原始正文
-            formatted_result = self.format_processed_result(processed_result)
-            email_info["body_text"] = formatted_result
-            email_info["body_html"] = f"<pre>{formatted_result}</pre>"
+            email_info["body_text"] = processed_result
 
         # 返回处理后的邮件信息
         return email_info
@@ -114,34 +112,7 @@ class MailProcessor:
         logger.warning("LLM processing logic not implemented yet")
         return None
 
-    def format_processed_result(self, processed_result: Dict[str, Any]) -> str:
-        """
-        格式化LLM处理结果
 
-        Args:
-            processed_result: LLM处理结果
-
-        Returns:
-            格式化后的字符串
-        """
-        # TODO: 这里是留给用户的格式化逻辑实现位置
-        # 用户可以根据processed_result中的内容生成最终的输出格式
-
-        # 示例实现（用户需要根据实际需求修改）：
-        # formatted_output = f"""
-        # 邮件处理结果:
-        # 摘要: {processed_result.get('summary', 'N/A')}
-        # 分类: {processed_result.get('category', 'N/A')}
-        # 优先级: {processed_result.get('priority', 'N/A')}
-        # 建议行动:
-        # """
-        # for action in processed_result.get('actions', []):
-        #     formatted_output += f"  - {action}\n"
-        # return formatted_output.strip()
-
-        # 当前实现仅作占位，返回简单字符串
-        logger.warning("Result formatting logic not implemented yet")
-        return str(processed_result)
 
     def _decode_header(self, header: str) -> str:
         """
