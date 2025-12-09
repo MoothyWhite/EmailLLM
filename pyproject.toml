@@ -5,6 +5,7 @@ description = "Email auto-forwarding bot with IMAP IDLE support"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "imapclient>=3.0.1",
     "loguru>=0.7.3",
     "openai-agents>=0.6.2",
     "python-dotenv>=1.2.1",
