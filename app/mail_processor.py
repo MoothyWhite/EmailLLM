@@ -84,6 +84,8 @@ class MailProcessor:
         # 调用LLM处理逻辑
         processed_result = self.process_with_llm(email_info)
 
+        logger.info(f"LLM processing result: {processed_result}")
+
         # 如果LLM处理成功，替换邮件正文
         if processed_result is not None:
             # 使用LLM处理结果替换原始正文

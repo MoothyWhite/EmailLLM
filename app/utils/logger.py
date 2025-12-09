@@ -2,6 +2,7 @@ import sys
 from pathlib import Path
 from typing import Optional
 from loguru import logger
+from ..config import config
 
 
 def setup_logger(log_level: str = "INFO", log_file: Optional[str] = None):
@@ -19,10 +20,6 @@ def setup_logger(log_level: str = "INFO", log_file: Optional[str] = None):
     logger.add(
         sys.stdout,
         level=log_level,
-        format="<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | "
-        "<level>{level: <8}</level> | "
-        "<cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - "
-        "<level>{message}</level>",
         enqueue=True,  # 异步写入
         backtrace=True,  # 错误跟踪
         diagnose=True,  # 诊断信息
@@ -38,7 +35,6 @@ def setup_logger(log_level: str = "INFO", log_file: Optional[str] = None):
         logger.add(
             str(log_path),
             level=log_level,
-            format="{time:YYYY-MM-DD HH:mm:ss.SSS} | {level: <8} | {name}:{function}:{line} - {message}",
             rotation="500 MB",  # 日志文件达到500MB时轮转
             retention="30 days",  # 保留30天的日志
             compression="zip",  # 压缩旧日志
@@ -51,7 +47,7 @@ def setup_logger(log_level: str = "INFO", log_file: Optional[str] = None):
 
 
 # 创建默认的日志记录器实例
-default_logger = setup_logger()
+default_logger = setup_logger(config.LOG_LEVEL, config.LOG_FILE)
 
 
 __all__ = ["logger", "setup_logger", "default_logger"]

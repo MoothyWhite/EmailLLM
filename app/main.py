@@ -17,7 +17,7 @@ from .config import config
 from .mail_fetcher import MailFetcher
 from .mail_sender import MailSender
 from .mail_processor import MailProcessor
-from .utils.logger import setup_logger
+from .utils.logger import default_logger as logger
 
 # 导入IMAPClient
 import ssl
@@ -29,8 +29,6 @@ class EmailForwarderBot:
 
     def __init__(self):
         """初始化邮件转发机器人"""
-        # 设置日志
-        self.logger = setup_logger(config.LOG_LEVEL, config.LOG_FILE)
 
         # 初始化各组件
         self.fetcher = MailFetcher()
@@ -52,8 +50,6 @@ class EmailForwarderBot:
         检查并处理未读邮件
         """
         try:
-            self.logger.info("Checking for unread emails...")
-
             # 建立IMAP连接
             ssl_context = ssl.create_default_context()
             with IMAPClient(
@@ -62,7 +58,6 @@ class EmailForwarderBot:
                 ssl=True,
                 ssl_context=ssl_context,
             ) as client:
-                self.logger.info("Connected to IMAP server")
                 client.login(config.SOURCE_EMAIL, config.SOURCE_PASSWORD)
 
                 # 选择收件箱
@@ -70,17 +65,17 @@ class EmailForwarderBot:
 
                 # 搜索未读邮件
                 uids = client.search("UNSEEN")
-                self.logger.info(f"Found {len(uids)} unread emails")
+                logger.info(f"Found {len(uids)} unread emails")
 
                 # 处理每个未读邮件
                 for uid in uids:
                     try:
-                        self.logger.info(f"Processing new mail with UID: {uid}")
+                        logger.info(f"Processing new mail with UID: {uid}")
 
                         # 获取邮件内容（使用IMAPClient直接获取原始邮件数据）
                         response = client.fetch([uid], ["RFC822"])
                         if not response or uid not in response:
-                            self.logger.error(
+                            logger.error(
                                 f"Failed to fetch raw email with UID: {uid}"
                             )
                             continue
@@ -90,7 +85,7 @@ class EmailForwarderBot:
                         # 使用MailProcessor解析原始邮件数据
                         email_info = self.processor.parse_raw_email(raw_email)
                         if not email_info:
-                            self.logger.error(f"Failed to parse email with UID: {uid}")
+                            logger.error(f"Failed to parse email with UID: {uid}")
                             continue
 
                         # 使用MailProcessor处理邮件内容（包括LLM处理）
@@ -99,11 +94,11 @@ class EmailForwarderBot:
                         # 发送邮件
                         success = self.sender.send_email(processed_email_info)
                         if success:
-                            self.logger.info(
+                            logger.info(
                                 f"Successfully forwarded email with UID: {uid}"
                             )
                         else:
-                            self.logger.error(
+                            logger.error(
                                 f"Failed to forward email with UID: {uid}"
                             )
 
@@ -111,10 +106,10 @@ class EmailForwarderBot:
                         client.add_flags([uid], [b"\\Seen"])
 
                     except Exception as e:
-                        self.logger.error(f"Error processing mail with UID {uid}: {e}")
+                        logger.error(f"Error processing mail with UID {uid}: {e}")
 
         except Exception as e:
-            self.logger.error(f"Error checking emails: {e}")
+            logger.error(f"Error checking emails: {e}")
 
     def _signal_handler(self, signum, frame):
         """
@@ -124,24 +119,24 @@ class EmailForwarderBot:
             signum: 信号编号
             frame: 当前堆栈帧
         """
-        self.logger.info(f"Received signal {signum}, shutting down gracefully...")
+        logger.info(f"Received signal {signum}, shutting down gracefully...")
         self.stop()
 
     def start(self):
         """启动邮件转发机器人"""
-        self.logger.info("Starting Email Forwarder Bot...")
+        logger.info("Starting Email Forwarder Bot...")
 
         try:
             # 测试SMTP连接
-            self.logger.info("Testing SMTP connection...")
+            logger.info("Testing SMTP connection...")
             if not self.sender.test_connection():
-                self.logger.error("SMTP connection test failed, exiting...")
+                logger.error("SMTP connection test failed, exiting...")
                 return
 
             self.is_running = True
 
-            self.logger.info("Email Forwarder Bot started successfully!")
-            self.logger.info("Press Ctrl+C to stop the bot")
+            logger.info("Email Forwarder Bot started successfully!")
+            logger.info("Press Ctrl+C to stop the bot")
 
             # 循环检查邮件
             while self.is_running:
@@ -153,18 +148,18 @@ class EmailForwarderBot:
                     time.sleep(1)
 
         except Exception as e:
-            self.logger.error(f"Error starting Email Forwarder Bot: {e}")
+            logger.error(f"Error starting Email Forwarder Bot: {e}")
             self.stop()
 
     def stop(self):
         """停止邮件转发机器人"""
-        self.logger.info("Stopping Email Forwarder Bot...")
+        logger.info("Stopping Email Forwarder Bot...")
         self.is_running = False
 
         # 断开邮件获取器连接
         self.fetcher.disconnect()
 
-        self.logger.info("Email Forwarder Bot stopped")
+        logger.info("Email Forwarder Bot stopped")
 
 
 def main():

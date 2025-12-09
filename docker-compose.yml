@@ -1,27 +1,12 @@
-version: '3.8'
-
 services:
   email-forwarder:
     build: .
     container_name: email-forwarder-bot
     restart: unless-stopped
     volumes:
-      # 挂载日志目录
       - ./logs:/app/logs
-      # 挂载环境变量文件
-      - ./.env:/app/.env:ro
     environment:
-      # 设置时区
       - TZ=Asia/Shanghai
-    healthcheck:
-      # 健康检查：检查日志文件是否存在且最近有更新
-      test: ["CMD-SHELL", "test -f /app/logs/email_forwarder.log && find /app/logs/email_forwarder.log -mmin -5 | grep -q . || exit 1"]
-      interval: 1m
-      timeout: 10s
-      retries: 3
-      start_period: 1m
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
+    env_file:
+      - ./.env
+  

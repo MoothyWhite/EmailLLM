@@ -1,38 +1,41 @@
-# 使用官方Python运行时作为基础镜像
-FROM python:3.9-slim
+FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim
 
-# 设置工作目录
-WORKDIR /app
+# 设置作者信息
+LABEL maintainer="wwq"
 
-# 设置环境变量
-ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1 \
-    UV_PROJECT_ENVIRONMENT=/app/.venv
+# 配置 Debian 软件源使用阿里云镜像
+RUN sed -i 's|deb.debian.org|mirrors.aliyun.com|g' /etc/apt/sources.list.d/debian.sources
 
-# 安装系统依赖
-RUN apt-get update && apt-get install -y \
-    gcc \
+# 更新包列表并安装常用工具
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    # 编辑/查看文件工具
+    vim \
+    nano \
+    less \
+    # 网络排查工具
+    curl \
+    wget \
+    # 进程/系统状态工具
+    procps \
+    lsof \
+    htop \
     && rm -rf /var/lib/apt/lists/*
 
+
+# 设置工作目录
+WORKDIR /email-llm
+
+# 利用缓存加速构建
+RUN --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
+    --mount=type=bind,source=uv.lock,target=uv.lock \
+    uv sync --locked --no-install-project --index-url "http://mirrors.aliyun.com/pypi/simple/"
+
 # 复制项目文件
-COPY . .
+COPY app ./app
+COPY uv.lock .
+COPY pyproject.toml .
 
-# 安装uv包管理器
-RUN pip install uv
-
-# 安装项目依赖
-RUN uv sync --locked
-
-# 创建日志目录
-RUN mkdir -p logs
-
-# 暴露端口（虽然这个应用不直接监听HTTP端口，但保留以备将来扩展）
-EXPOSE 8000
-
-# 创建非root用户
-RUN useradd --create-home --shell /bin/bash app \
-    && chown -R app:app /app
-USER app
+RUN  uv sync --locked --index-url "http://mirrors.aliyun.com/pypi/simple/"
 
 # 设置启动命令
-CMD ["uv", "run", "python", "app/main.py"]
+CMD ["uv", "run", "-m", "app.main"]
