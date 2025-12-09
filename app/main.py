@@ -48,6 +48,12 @@ class EmailForwarderBot:
             email_info: 邮件信息字典
         """
         try:
+            # 检查邮件主题是否以"[EmailLLM]"开头，如果是则跳过处理
+            subject = email_info.get("subject", "")
+            if subject.startswith("[EmailLLM]"):
+                logger.info(f"Skipping email with subject '{subject}' as it starts with '[EmailLLM]'")
+                return
+                
             # 使用MailProcessor处理邮件内容（包括LLM处理）
             processed_email_info = self.processor.process(email_info)
 
